@@ -1,0 +1,19 @@
+{
+  "name": "audacious-server",
+  "version": "1.0.0",
+  "description": "Server for the mini-team9 project. Receives arduino requests and uses audacious cli to navigate a playlist",
+  "main": "server.js",
+  "scripts": {
+    "test": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GabrielAlacchi/mini-team9.git"
+  },
+  "author": "Gabriel Alacchi",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/GabrielAlacchi/mini-team9/issues"
+  },
+  "homepage": "https://github.com/GabrielAlacchi/mini-team9#readme"
+}
