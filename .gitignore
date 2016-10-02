@@ -1,4 +1,7 @@
 
-.idea/
+*.pyc
 
-logs
+.idea/
+train
+data
+
