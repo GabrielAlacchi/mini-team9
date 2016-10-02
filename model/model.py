@@ -10,15 +10,17 @@ def hidden_layer(x, input_size, output_size, scope_name):
     # Input enters as a row vector
     with tf.name_scope(scope_name):
         weights = tf.Variable(
-            tf.truncated_normal([input_size, output_size], stddev=1.0 / math.sqrt(float(input_size))), name='weights')
+            tf.truncated_normal([input_size, output_size], stddev=1.0 / math.sqrt(float(input_size))),
+                name=scope_name + '/weights')
 
-        biases = tf.Variable(tf.zeros([output_size]), name='biases')
+        biases = tf.Variable(tf.zeros([output_size]),
+                name=scope_name + '/biases')
 
         hidden = tf.nn.relu(tf.matmul(x, weights) + biases)
 
     with tf.name_scope(scope_name + '/summaries'):
-        tf.histogram_summary('weights', weights)
-        tf.histogram_summary('biases', biases)
+        tf.histogram_summary(scope_name + '/weights', weights)
+        tf.histogram_summary(scope_name + '/biases', biases)
 
     return hidden
 
@@ -27,15 +29,16 @@ def softmax_classifier(x, input_size, num_classes, scope_name):
 
     with tf.name_scope(scope_name):
         weights = tf.Variable(
-            tf.truncated_normal([input_size, num_classes], stddev=1.0 / math.sqrt(float(input_size))), name='weights')
+            tf.truncated_normal([input_size, num_classes], stddev=1.0 / math.sqrt(float(input_size))),
+            name=scope_name + '/weights')
 
-        biases = tf.Variable(tf.zeros([num_classes]), name='biases')
+        biases = tf.Variable(tf.zeros([num_classes]), name=scope_name + '/biases')
 
         softmax = tf.nn.softmax(tf.matmul(x, weights) + biases)
 
     with tf.name_scope(scope_name + '/summaries'):
-        tf.histogram_summary('weights', weights)
-        tf.histogram_summary('biases', biases)
+        tf.histogram_summary(scope_name + '/weights', weights)
+        tf.histogram_summary(scope_name + '/biases', biases)
 
     return softmax
 
@@ -43,15 +46,15 @@ def softmax_classifier(x, input_size, num_classes, scope_name):
 # Requires that inputs are row vectors of size INPUT_SIZE
 def inference(x):
 
-    hidden = hidden_layer(x, INPUT_SIZE, 50, "hidden")
-    softmax = softmax_classifier(hidden, 50, NUM_CLASSES, "softmax_linear")
+    hidden = hidden_layer(x, INPUT_SIZE, 100, "hidden1")
+    softmax = softmax_classifier(hidden, 100, NUM_CLASSES, "softmax_linear")
 
     return softmax
 
 
 def loss(y, labels):
-    labels = tf.to_int64(labels)
-    cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(y, labels, name='cross_entropy')
+    labels = tf.cast(labels, dtype=tf.float32)
+    cross_entropy = -tf.reduce_sum(labels * tf.log(y), reduction_indices=[1])
     mean_loss = tf.reduce_mean(cross_entropy, name='loss')
 
     return mean_loss
@@ -65,10 +68,10 @@ def training(loss_function, learning_rate):
 
     global_step = tf.Variable(0, name='global_step', trainable=False)
 
-    train_op = optimizer.minimize(loss, global_step=global_step)
+    train_op = optimizer.minimize(loss_function, global_step=global_step)
     return train_op
 
 
 def evaluate(y, labels):
-    correct = tf.nn.in_top_k(y, labels, 1)
-    return tf.reduce_sum(tf.cast(correct, tf.int32))
+    correct = tf.equal(tf.argmax(y, 1), tf.argmax(labels, 1))
+    return tf.reduce_mean(tf.cast(correct, tf.float32))
