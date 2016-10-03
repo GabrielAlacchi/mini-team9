@@ -15,7 +15,7 @@ def save_file(file_path, file_content):
     if not path.exists(directory):
         os.makedirs(directory)
 
-    with open(file_path) as file_stream:
+    with open(file_path, 'w') as file_stream:
         file_stream.write(file_content)
 
 
@@ -23,13 +23,24 @@ def open_com(port_name, baud):
     return serial.Serial(port_name, baud, timeout=1)
 
 
+def try_read_line(sio):
+    try:
+        return sio.readline()
+    except:
+        return ''
+
+
 def take_readings(com_port, number_of_readings, directory, label_name):
     sio = io.TextIOWrapper(io.BufferedRWPair(com_port, com_port))
     number_of_files = 0
+    counter = 0
     file_content = ''
     while True:
-        for counter in xrange(number_of_readings):
-            file_content += com_port.readline()
+        while counter < number_of_readings:
+            line = try_read_line(sio)
+            if 'ANG:' in line:
+                file_content += line
+                counter += 1
 
         print "%d readings taken from %s" % (number_of_readings, com_port.portstr)
 
@@ -41,6 +52,7 @@ def take_readings(com_port, number_of_readings, directory, label_name):
         print "%d files written" % number_of_files
 
         file_content = ''
+        counter = 0
 
 
 def main(argv):
