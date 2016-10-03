@@ -6,11 +6,17 @@ import getopt
 import sys
 
 import os.path as path
+import os
 
-import numpy as np
 
+def save_file(file_path, file_content):
+    directory = path.dirname(file_path)
 
-def save_file(path, file_content):
+    if not path.exists(directory):
+        os.makedirs(directory)
+
+    with open(file_path) as file_stream:
+        file_stream.write(file_content)
 
 
 def open_com(port_name, baud):
@@ -25,10 +31,17 @@ def take_readings(com_port, number_of_readings, directory, label_name):
         for counter in xrange(number_of_readings):
             file_content += com_port.readline()
 
+        print "%d readings taken from %s" % (number_of_readings, com_port.portstr)
+
         file_name = path.join(directory, label_name, 'readings_%d.dat' % number_of_files)
-        save_file(path, file_content)
+        save_file(file_name, file_content)
+        print "Readings written to file: %s" % file_name
+
         number_of_files += 1
+        print "%d files written" % number_of_files
+
         file_content = ''
+
 
 def main(argv):
     optlist, argv = getopt.getopt(argv, 'p:n:b:d:l:', ['--com-port=', '--number-of-reads=', '--baud=', '--save-dir=', '--label-name='])
@@ -37,7 +50,7 @@ def main(argv):
     baud = 9600
 
     label_name = ''
-    directory = ''
+    directory = '.'
 
     readings = 50
 
@@ -52,6 +65,10 @@ def main(argv):
             directory = arg
         elif opt in ('-l', '--label='):
             label_name = arg
+
+    if label_name == '':
+        print "Missing argument label_name, -l"
+        exit(2)
 
     com_port = open_com(port, baud)
     take_readings(com_port, readings, directory, label_name)
