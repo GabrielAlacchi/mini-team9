@@ -3,6 +3,9 @@ import numpy as np
 import model
 import math
 
+import os
+import re
+
 NOISE_FACTOR = 0.5
 
 
@@ -28,11 +31,11 @@ class DataSet:
         return inputs, labels
 
 
-def fetch_data(dir, test):
+def fetch_data(directory, test):
     if test:
         return fetch_test_data()
-
-    return None
+    else:
+        return fetch_data_from_dir(directory)
 
 
 def norm(vector):
@@ -70,3 +73,47 @@ def fetch_test_data():
     data.inputs = inputs
     data.labels = labels
     return data
+
+
+def write_array(lines, array):
+    i = 0
+    for line in lines:
+        match = re.match("!ANG:([^,]+),([^,]+),([^,]+)", line)
+        if match:
+            array[i:i+3] = [match.group(1), match.group(2), match.group(3)]
+            i += 3
+
+
+def fetch_all_files(sub_dir)
+    files = [os.path.join(sub_dir, x) for x in os.listdir(sub_dir)]
+
+    array = np.zeros([len(files), 150])
+    row = 0
+    for f in files:
+        with open(f, 'r') as file_stream:
+            lines = file_stream.readlines()
+            write_array(lines, array[row])
+            row += 1
+
+    return array
+
+
+def fetch_data_from_dir(directory):
+    sub_dirs = [os.path.join(directory, x) for x in os.listdir(directory) if
+                os.path.isdir(os.path.join(directory, x))]
+
+    num_classes = len(sub_dirs)
+    arrays = []
+
+    num_rows = 0
+    for sub_dir in sub_dirs:
+        label_name = os.path.basename(sub_dir)
+        array = fetch_all_files(sub_dir)
+        arrays += [array]
+        num_rows += array.shape[0]
+
+    data = np.zeros([num_rows, 150])
+
+    written = [0] * len(arrays)
+    for i in xrange(num_rows):
+        array = arrays[i % len(arrays)]
