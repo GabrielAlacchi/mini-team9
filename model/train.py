@@ -7,8 +7,8 @@ import data_set
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
-flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
-flags.DEFINE_integer('training_steps', 15000, 'Number of training steps.')
+flags.DEFINE_float('learning_rate', 0.0001, 'Initial learning rate.')
+flags.DEFINE_integer('training_steps', 20000, 'Number of training steps.')
 flags.DEFINE_integer('batch_size', 150, 'Batch size.')
 flags.DEFINE_string('train_dir', 'train', 'Directory to put training data.')
 flags.DEFINE_bool('test_data', True, 'Whether or not to use test_data')

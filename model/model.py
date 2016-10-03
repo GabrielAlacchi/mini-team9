@@ -16,7 +16,7 @@ def hidden_layer(x, input_size, output_size, scope_name):
         biases = tf.Variable(tf.zeros([output_size]),
                 name=scope_name + '/biases')
 
-        hidden = tf.nn.relu(tf.matmul(x, weights) + biases)
+        hidden = tf.nn.sigmoid(tf.matmul(x, weights) + biases)
 
     with tf.name_scope(scope_name + '/summaries'):
         tf.histogram_summary(scope_name + '/weights', weights)
@@ -34,7 +34,7 @@ def softmax_classifier(x, input_size, num_classes, scope_name):
 
         biases = tf.Variable(tf.zeros([num_classes]), name=scope_name + '/biases')
 
-        softmax = tf.nn.softmax(tf.matmul(x, weights) + biases)
+        softmax = tf.nn.log_softmax(tf.matmul(x, weights) + biases)
 
     with tf.name_scope(scope_name + '/summaries'):
         tf.histogram_summary(scope_name + '/weights', weights)
@@ -46,18 +46,28 @@ def softmax_classifier(x, input_size, num_classes, scope_name):
 # Requires that inputs are row vectors of size INPUT_SIZE
 def inference(x):
 
-    hidden = hidden_layer(x, INPUT_SIZE, 100, "hidden1")
-    softmax = softmax_classifier(hidden, 100, NUM_CLASSES, "softmax_linear")
+    # hidden1 = hidden_layer(x, INPUT_SIZE, 100, "hidden1")
+    # hidden2 = hidden_layer(hidden1, 100, 50, "hidden2")
+    softmax = softmax_classifier(x, INPUT_SIZE, NUM_CLASSES, "softmax_linear")
 
     return softmax
 
 
 def loss(y, labels):
     labels = tf.cast(labels, dtype=tf.float32)
-    cross_entropy = -tf.reduce_sum(labels * tf.log(y), reduction_indices=[1])
-    mean_loss = tf.reduce_mean(cross_entropy, name='loss')
+    cross_entropy = -tf.reduce_sum(labels * y, reduction_indices=[1])
 
-    return mean_loss
+    pre_reg_loss = tf.reduce_mean(cross_entropy, name='loss')
+
+    vars_to_regularize = [v for v in tf.all_variables()
+                             if 'weights' in v.name or 'biases' in v.name]
+
+    final_loss = pre_reg_loss
+    for tensor in vars_to_regularize:
+        final_loss += tf.nn.l2_loss(tensor)
+        pass
+
+    return final_loss
 
 
 def training(loss_function, learning_rate):
