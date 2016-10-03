@@ -201,6 +201,8 @@ void setup()
   timer=millis();
   delay(20);
   counter=0;
+
+  Serial.println("ready");
 }
 
 void loop() //Main Loop
@@ -209,6 +211,7 @@ void loop() //Main Loop
  
   if(buttonState == HIGH){
     i = 0;
+    delay(200);
   }
   if((millis()-timer)>=20 && i < 50)  // Main loop runs at 50Hz
   {
@@ -231,7 +234,7 @@ void loop() //Main Loop
     Read_Gyro();   // This read gyro data
     Read_Accel();     // Read I2C accelerometer
 
-    if (counter > 5)  // Read compass data at 10Hz... (5 loop runs)
+    if (counter > 5)  // Read compass data at 1pr0Hz... (5 loop runs)
     {
       counter=0;
       Read_Compass();    // Read I2C magnetometer
