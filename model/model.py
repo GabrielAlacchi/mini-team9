@@ -64,15 +64,14 @@ def loss(y, labels):
 
     final_loss = pre_reg_loss
     for tensor in vars_to_regularize:
-        final_loss += tf.nn.l2_loss(tensor)
-        pass
+        final_loss += tf.nn.l2_loss(tensor, name=tensor.op.name + '/l2_regularization')
 
     return final_loss
 
 
 def training(loss_function, learning_rate):
 
-    tf.scalar_summary(loss_function.op.name, loss_function)
+    tf.scalar_summary("Loss + L2 Regularization", loss_function)
 
     optimizer = tf.train.GradientDescentOptimizer(learning_rate)
 
