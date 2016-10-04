@@ -6,6 +6,35 @@ NUM_CLASSES = 3
 INPUT_SIZE = 150
 
 
+def weight_variable(shape, name):
+    initial = tf.truncated_normal(shape, stddev=0.1)
+    return tf.Variable(initial, name=name)
+
+
+def bias_variable(shape, name):
+    initial = tf.constant(0.1, shape=shape)
+    return tf.Variable(initial, name=name)
+
+
+def conv2d(x, W):
+    return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
+
+
+def max_pool_2x2(x):
+    return tf.nn.max_pool(x, ksize=[1, 2, 2, 1],
+                                strides=[1, 2, 2, 1], padding='SAME')
+
+
+def convolution(x, input_size, scope_name):
+
+    x_conv = tf.reshape(x, [-1, 50, 3, 1])
+    with tf.name_scope(scope_name):
+        W = weight_variable([5, 5, 1, 16], name=scope_name + '/weights')
+        b = bias_variable([16], name=scope_name + '/biases')
+
+        return tf.nn.relu(conv2d(x_conv, W) + b)
+
+
 def hidden_layer(x, input_size, output_size, scope_name):
     # Input enters as a row vector
     with tf.name_scope(scope_name):
@@ -46,9 +75,13 @@ def softmax_classifier(x, input_size, num_classes, scope_name):
 # Requires that inputs are row vectors of size INPUT_SIZE
 def inference(x):
 
-    # hidden1 = hidden_layer(x, INPUT_SIZE, 100, "hidden1")
+    # hidden = hidden_layer(x, INPUT_SIZE, INPUT_SIZE, "hidden")
     # hidden2 = hidden_layer(hidden1, 100, 50, "hidden2")
-    softmax = softmax_classifier(x, INPUT_SIZE, NUM_CLASSES, "softmax_linear")
+    conv = convolution(x, INPUT_SIZE, "conv1")
+    conv_size = 50 * 3 * 16
+    conv_flat = tf.reshape(conv, shape=[-1, conv_size])
+    hidden = hidden_layer(conv_flat, conv_size, conv_size, "hidden")
+    softmax = softmax_classifier(hidden, conv_size, NUM_CLASSES, "softmax_linear")
 
     return softmax
 
