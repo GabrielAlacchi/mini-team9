@@ -7,8 +7,8 @@ import data_set
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
-flags.DEFINE_float('learning_rate', 0.0001, 'Initial learning rate.')
-flags.DEFINE_integer('training_steps', 20000, 'Number of training steps.')
+flags.DEFINE_float('learning_rate', 1e-4, 'Initial learning rate.')
+flags.DEFINE_integer('training_steps', 15000, 'Number of training steps.')
 flags.DEFINE_integer('batch_size', 50, 'Batch size.')
 flags.DEFINE_string('train_dir', 'train', 'Directory to put training data.')
 flags.DEFINE_bool('test_data', False, 'Whether or not to use test_data')
@@ -20,8 +20,8 @@ def train():
 
         data = data_set.fetch_data('./recordings', FLAGS.test_data)
 
-        x = tf.placeholder(tf.float32, [None, model.INPUT_SIZE])
-        labels = tf.placeholder(tf.int32, [None, model.NUM_CLASSES])
+        x = tf.placeholder(tf.float32, [None, model.INPUT_SIZE], name='inputs_pl')
+        labels = tf.placeholder(tf.int32, [None, model.NUM_CLASSES], name='labels_pl')
 
         logits = model.inference(x)
 
@@ -85,6 +85,11 @@ def train():
             }
             accuracy_on_test = sess.run(eval_correct, feed_dict=feed_dict)
             print "Final accuracy: %.2f" % accuracy_on_test
+
+            print "Exporting graph and parameters..."
+            tf.train.write_graph(sess.graph_def, FLAGS.train_dir, "graph.pb", False)  # proto
+            final_saver = tf.train.Saver(tf.all_variables())
+            final_saver.save(sess, os.path.join(FLAGS.train_dir, "graph_params.data"))
 
 
 if __name__ == "__main__":

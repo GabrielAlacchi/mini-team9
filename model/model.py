@@ -63,7 +63,7 @@ def softmax_classifier(x, input_size, num_classes, scope_name):
 
         biases = tf.Variable(tf.zeros([num_classes]), name=scope_name + '/biases')
 
-        softmax = tf.nn.log_softmax(tf.matmul(x, weights) + biases)
+        softmax = tf.nn.log_softmax(tf.matmul(x, weights) + biases, name="softmax_result")
 
     with tf.name_scope(scope_name + '/summaries'):
         tf.histogram_summary(scope_name + '/weights', weights)
@@ -77,11 +77,11 @@ def inference(x):
 
     # hidden = hidden_layer(x, INPUT_SIZE, INPUT_SIZE, "hidden")
     # hidden2 = hidden_layer(hidden1, 100, 50, "hidden2")
-    # conv = convolution(x, INPUT_SIZE, "conv1")
-    # conv_size = 50 * 3 * 16
-    # conv_flat = tf.reshape(conv, shape=[-1, conv_size])
-    # hidden = hidden_layer(conv_flat, conv_size, conv_size, "hidden")
-    softmax = softmax_classifier(x, INPUT_SIZE, NUM_CLASSES, "softmax_linear")
+    conv = convolution(x, INPUT_SIZE, "conv1")
+    conv_size = 50 * 3 * 16
+    conv_flat = tf.reshape(conv, shape=[-1, conv_size])
+    hidden = hidden_layer(conv_flat, conv_size, conv_size, "hidden")
+    softmax = softmax_classifier(hidden, conv_size, NUM_CLASSES, "softmax_linear")
 
     return softmax
 
@@ -98,6 +98,7 @@ def loss(y, labels):
     final_loss = pre_reg_loss
     for tensor in vars_to_regularize:
         final_loss += tf.nn.l2_loss(tensor, name=tensor.op.name + '/l2_regularization')
+        pass
 
     return final_loss
 
@@ -116,4 +117,4 @@ def training(loss_function, learning_rate):
 
 def evaluate(y, labels):
     correct = tf.equal(tf.argmax(y, 1), tf.argmax(labels, 1))
-    return tf.reduce_mean(tf.cast(correct, tf.float32))
+    return tf.reduce_mean(tf.cast(correct, tf.float32), name='eval')

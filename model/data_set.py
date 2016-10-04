@@ -9,11 +9,21 @@ import transform
 
 NOISE_FACTOR = 0.5
 
+# http://stanford.edu/~sxie/Michael%20Xie,%20David%20Pan,%20Accelerometer%20Gesture%20Recognition.pdf
+EXP_ALPHA = 0.3
+THRESHOLD_ALPHA = 0.22
 
 class DataSet:
 
     def __init__(self):
         self.batch_index = 0
+
+    def one_hot_to_label(self, one_hot):
+        for i in xrange(len(one_hot)):
+            if one_hot[i] == 1:
+                return self.label_dict[i]
+
+        return None
 
     def get_all(self):
         return self.inputs, self.labels
@@ -76,6 +86,17 @@ def fetch_test_data():
     return data
 
 
+def expand_range(prev_vec, curr_vec):
+    delta = curr_vec - prev_vec
+    for i in xrange(3):
+        if delta[i] < -300.:
+            # Wrapped from 180 to -180
+            curr_vec[i] += 360.
+        elif delta[i] > 300:
+            # Wrapped from -180 to 180
+            curr_vec[i] -= 360
+
+
 def write_array(lines, array):
     i = 0
     for line in lines:
@@ -88,6 +109,12 @@ def write_array(lines, array):
     basis = np.copy(array[:3])
     for i in xrange(0, 150, 3):
         array[i:i+3] = transform.relative_angles(basis, array[i:i+3])
+
+    # Convert ranges of the angles to -inf to inf to preserve rotation information
+    for i in xrange(3, 150, 3):
+        prev_vec = array[i-3:i]
+        curr_vec = array[i:i+3]
+        expand_range(prev_vec=prev_vec, curr_vec=curr_vec)
 
 
 def fetch_all_files(sub_dir):
@@ -104,16 +131,104 @@ def fetch_all_files(sub_dir):
     return array
 
 
+def exp_moving_avg(example_matrix):
+    alpha = EXP_ALPHA
+    smoothed_matrix = np.zeros([50, 3])
+    smoothed_matrix[0] = example_matrix[0]
+    for i in xrange(1, 50):
+        smoothed_matrix[i] = alpha * example_matrix[i-1] + (1 - alpha) * smoothed_matrix[i-1]
+
+    return smoothed_matrix
+
+
+def threshold_and_interpolate(matrix):
+    mat_rows = matrix.shape[0]
+
+    x_init = matrix[0]
+    alpha = THRESHOLD_ALPHA
+
+    norms = np.array(map(lambda x: norm(x - x_init), matrix))
+    threshold = alpha * math.sqrt(np.std(norms))
+
+    left = 0
+    right = matrix.shape[0]
+    # Get the indices to keep
+    for ind in xrange(0, matrix.shape[0]):
+        # Find the first point above the threshold
+        if norms[ind] > threshold:
+            left = ind
+            break
+
+    # Threshold a bit on the right if we can
+    for ind in xrange(matrix.shape[0], matrix.shape[0] - 10, -1):
+        # The the threshold at the end
+        if norms[ind - 1] > threshold:
+            right = ind
+            break
+
+    # Slice to cut off noise
+    matrix = matrix[left:right]
+
+    # Re interpolate between vectors to get back to 50 points
+    num_vectors = matrix.shape[0]
+
+    for ind in xrange(mat_rows - num_vectors):
+        # Find an appropriate spot to interpolate between
+        inter = int(ind * float(mat_rows) / float(mat_rows - num_vectors)) + 1
+
+        if inter >= num_vectors - 1:
+            inter = num_vectors - 2
+
+        # Interpolate
+        interpolated_vec = np.sum(matrix[inter:inter+2], axis=0) / 2.
+        matrix = np.insert(matrix, 1, values=interpolated_vec, axis=0)
+
+    return matrix
+
+
+def map_to_mat(matrix, row_entry):
+    for ind in xrange(matrix.shape[0]):
+        matrix[ind] = np.copy(row_entry[3*ind:3*ind+3])
+
+
+def mat_to_row(matrix, row_entry):
+    for ind in xrange(matrix.shape[0]):
+        row_entry[3*ind:3*ind+3] = np.copy(matrix[ind])
+
+
+def process(data):
+
+    # Stores sample points as row vectors
+
+    for ind in xrange(data.shape[0]):
+        # Reshape every given row to a matrix of row vectors
+        matrix = np.zeros([50, 3])
+
+        # I don't want to use reshape since it'll disorganize the data
+        map_to_mat(matrix, data[ind])
+        matrix = exp_moving_avg(example_matrix=matrix)
+        matrix = threshold_and_interpolate(matrix)
+        mat_to_row(matrix, data[ind])
+
+    return data
+
+
 def fetch_data_from_dir(directory):
+
+    print "Loading data from %s" % directory
+
     sub_dirs = [os.path.join(directory, x) for x in os.listdir(directory) if
                 os.path.isdir(os.path.join(directory, x))]
 
-    num_classes = len(sub_dirs)
+    label_dict = {}
+    for j in xrange(len(sub_dirs)):
+        label_dict[j] = os.path.basename(sub_dirs[j])
+
     arrays = []
 
     num_rows = 0
     for sub_dir in sub_dirs:
-        label_name = os.path.basename(sub_dir)
+        print "Loading data for class %s" % os.path.basename(sub_dir)
         array = fetch_all_files(sub_dir)
         arrays += [array]
         num_rows += array.shape[0]
@@ -127,15 +242,22 @@ def fetch_data_from_dir(directory):
         data[i] = array[index]
         labels[i][i % len(arrays)] = 1
 
+    print "Done loading data..."
+
     data_set = DataSet()
-    data_set.inputs = data
+
+    print "Preprocessing data..."
+    data_set.inputs = process(data)
     data_set.labels = labels
+    data_set.label_dict = label_dict
+
+    print "Data loaded!\n"
     return data_set
 
 if __name__ == "__main__":
-    array = fetch_all_files('./test/right')
+    array = fetch_all_files('./recordings/up')
 
     for i in xrange(array.shape[0]):
-        with open('./test/right_test/readings_%d.dat' % i, 'w') as f:
+        with open('./test/up/readings_%d.dat' % i, 'w') as f:
             for j in xrange(0, 150, 3):
                 f.write('!ANG:%.2f,%.2f,%.2f\n' % (array[i][j], array[i][j+1], array[i][j+2]))
