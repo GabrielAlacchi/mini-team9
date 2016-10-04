@@ -8,6 +8,8 @@ import sys
 import os.path as path
 import os
 
+import re
+
 
 def save_file(file_path, file_content):
     directory = path.dirname(file_path)
@@ -35,12 +37,39 @@ def take_readings(com_port, number_of_readings, directory, label_name):
     number_of_files = 0
     counter = 0
     file_content = ''
+
+    files_generated = []
+    if os.path.exists(path.join(directory, label_name)):
+        files_generated = os.listdir(path.join(directory, label_name))
+
+    max = 0
+    for file_name in files_generated:
+        matches = re.match("readings_([0-9]+)", file_name)
+        if matches:
+            num = int(matches.group(1))
+            if num > max:
+                max = num
+
+    if max > 0:
+        number_of_files = max + 1
+        print "%d files already generated" % number_of_files
+
+    print "Arduino is initializing... "
+
+    while "ready" not in try_read_line(sio):
+        pass
+
+    print "Ready..."
+
     while True:
+
         while counter < number_of_readings:
             line = try_read_line(sio)
             if 'ANG:' in line:
                 file_content += line
                 counter += 1
+            else:
+                counter = 0
 
         print "%d readings taken from %s" % (number_of_readings, com_port.portstr)
 
