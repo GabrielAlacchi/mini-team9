@@ -79,12 +79,17 @@ def write_array(lines, array):
     i = 0
     for line in lines:
         match = re.match("!ANG:([^,]+),([^,]+),([^,]+)", line)
-        if match:
+        if match and i < array.shape[0]:
             array[i:i+3] = [match.group(1), match.group(2), match.group(3)]
             i += 3
 
+    # Make all entries relative to the first
+    basis = np.copy(array[:3])
+    for i in xrange(0, 150, 3):
+        array[i:i+3] = array[i:i+3] - basis
 
-def fetch_all_files(sub_dir)
+
+def fetch_all_files(sub_dir):
     files = [os.path.join(sub_dir, x) for x in os.listdir(sub_dir)]
 
     array = np.zeros([len(files), 150])
@@ -113,7 +118,15 @@ def fetch_data_from_dir(directory):
         num_rows += array.shape[0]
 
     data = np.zeros([num_rows, 150])
+    labels = np.zeros([num_rows, 3])
 
-    written = [0] * len(arrays)
     for i in xrange(num_rows):
         array = arrays[i % len(arrays)]
+        index = i / 3
+        data[i] = array[index]
+        labels[i][i % len(arrays)] = 1
+
+    data_set = DataSet()
+    data_set.inputs = data
+    data_set.labels = labels
+    return data_set
