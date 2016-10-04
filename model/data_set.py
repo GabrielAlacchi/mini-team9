@@ -5,6 +5,7 @@ import math
 
 import os
 import re
+import transform
 
 NOISE_FACTOR = 0.5
 
@@ -86,7 +87,7 @@ def write_array(lines, array):
     # Make all entries relative to the first
     basis = np.copy(array[:3])
     for i in xrange(0, 150, 3):
-        array[i:i+3] = array[i:i+3] - basis
+        array[i:i+3] = transform.relative_angles(basis, array[i:i+3])
 
 
 def fetch_all_files(sub_dir):
@@ -130,3 +131,11 @@ def fetch_data_from_dir(directory):
     data_set.inputs = data
     data_set.labels = labels
     return data_set
+
+if __name__ == "__main__":
+    array = fetch_all_files('./test/right')
+
+    for i in xrange(array.shape[0]):
+        with open('./test/right_test/readings_%d.dat' % i, 'w') as f:
+            for j in xrange(0, 150, 3):
+                f.write('!ANG:%.2f,%.2f,%.2f\n' % (array[i][j], array[i][j+1], array[i][j+2]))

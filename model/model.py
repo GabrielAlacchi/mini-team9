@@ -77,11 +77,11 @@ def inference(x):
 
     # hidden = hidden_layer(x, INPUT_SIZE, INPUT_SIZE, "hidden")
     # hidden2 = hidden_layer(hidden1, 100, 50, "hidden2")
-    conv = convolution(x, INPUT_SIZE, "conv1")
-    conv_size = 50 * 3 * 16
-    conv_flat = tf.reshape(conv, shape=[-1, conv_size])
-    hidden = hidden_layer(conv_flat, conv_size, conv_size, "hidden")
-    softmax = softmax_classifier(hidden, conv_size, NUM_CLASSES, "softmax_linear")
+    # conv = convolution(x, INPUT_SIZE, "conv1")
+    # conv_size = 50 * 3 * 16
+    # conv_flat = tf.reshape(conv, shape=[-1, conv_size])
+    # hidden = hidden_layer(conv_flat, conv_size, conv_size, "hidden")
+    softmax = softmax_classifier(x, INPUT_SIZE, NUM_CLASSES, "softmax_linear")
 
     return softmax
 
