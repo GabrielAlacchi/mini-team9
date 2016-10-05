@@ -91,6 +91,13 @@ def train():
             final_saver = tf.train.Saver(tf.all_variables())
             final_saver.save(sess, os.path.join(FLAGS.train_dir, "graph_params.data"))
 
+            print "Exporting labels..."
+            label_dict = validation_data.label_dict
+
+            with open(os.path.join(FLAGS.train_dir, "labels.txt"), 'w') as f:
+                for key, val in label_dict.iteritems():
+                    f.write("%d:%s\n" % (key, val))
+
 
 if __name__ == "__main__":
     train()

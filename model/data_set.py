@@ -99,7 +99,7 @@ def expand_range(prev_vec, curr_vec):
             curr_vec[i] -= 360
 
 
-def write_array(lines, array):
+def write_from_lines(lines, array):
     i = 0
     for line in lines:
         match = re.match("!ANG:([^,]+),([^,]+),([^,]+)", line)
@@ -127,7 +127,7 @@ def fetch_all_files(sub_dir):
     for f in files:
         with open(f, 'r') as file_stream:
             lines = file_stream.readlines()
-            write_array(lines, array[row])
+            write_from_lines(lines, array[row])
             row += 1
 
     return array
@@ -233,6 +233,13 @@ def process(data):
         data = np.insert(data, data.shape[1], fft_entries[ind], axis=1)
 
     return data
+
+
+def fetch_input_from_lines(lines):
+    # Fetches inputs and pre processes them
+    inputs = np.zeros([1, 150])
+    write_from_lines(lines, inputs)
+    return process(inputs)
 
 
 def fetch_data_from_dir(directory):

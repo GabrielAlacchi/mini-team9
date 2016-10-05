@@ -1,9 +1,11 @@
 
 import tensorflow as tf
-from tensorflow.python.platform import gfile
+import numpy as np
+
 import model
 import data_set
 import os
+import re
 
 x_pl = tf.placeholder(dtype=tf.float32, shape=[None, model.INPUT_SIZE])
 labels_pl = tf.placeholder(dtype=tf.float32, shape=[None, model.NUM_CLASSES])
@@ -11,10 +13,17 @@ labels_pl = tf.placeholder(dtype=tf.float32, shape=[None, model.NUM_CLASSES])
 
 class Model:
 
-    def __init__(self, inference, loss, evaluate):
+    def __init__(self, inference, loss, evaluate, label_dict):
         self.inference = inference
         self.loss = loss
         self.evaluate = evaluate
+        self.label_dict = label_dict
+
+    def labels_from_prediction(self, prediction):
+        # Returns an array of the index of max for each prediction (row) vector
+        predictions = np.argmax(prediction, axis=1)
+        # Lookup the label_dict for each argument
+        return map(lambda arg: self.label_dict[arg], predictions)
 
 
 def restore_from_train_sess(sess, train_dir):
@@ -28,9 +37,36 @@ def restore_from_train_sess(sess, train_dir):
     print "done..."
 
     saver = tf.train.Saver(tf.all_variables())
-    saver.restore(sess, os.path.join('train', 'checkpoint-19999'))
 
-    return Model(logits, loss, eval_op)
+    checkpoint_files = [os.path.join(train_dir, f) for f in os.listdir(train_dir)
+                                                if 'checkpoint' in f
+                                                and '.meta' not in f]
+
+    if len(checkpoint_files) == 0:
+        raise StandardError("The train directory provided is empty")
+
+    greatest_checkpoint = 0
+
+    for file_path in checkpoint_files:
+        match = re.match("checkpoint-([0-9]+)", file_path)
+        if match:
+            checkpoint_num = int(match.group(1))
+            greatest_checkpoint = max(checkpoint_num, greatest_checkpoint)
+
+    saver.restore(sess, os.path.join(train_dir, 'checkpoint-%d' % greatest_checkpoint))
+
+    print "Restored session variables..."
+    print "Reading labels..."
+
+    label_dict = {}
+    with open(os.path.join(train_dir, 'labels.txt'), 'r') as f:
+        line = f.readline()
+        while line:
+            match = re.match("([0-9]+):(.*)", line)
+            if match:
+                label_dict[int(match.group(1))] = match.group(2)
+
+    return Model(logits, loss, eval_op, label_dict)
 
 
 if __name__ == "__main__":
