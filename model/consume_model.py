@@ -5,40 +5,45 @@ import model
 import data_set
 import os
 
+x_pl = tf.placeholder(dtype=tf.float32, shape=[None, model.INPUT_SIZE])
+labels_pl = tf.placeholder(dtype=tf.float32, shape=[None, model.NUM_CLASSES])
+
+
+class Model:
+
+    def __init__(self, inference, loss, evaluate):
+        self.inference = inference
+        self.loss = loss
+        self.evaluate = evaluate
+
 
 def restore_from_train_sess(sess, train_dir):
     print "loading graph..."
-    with gfile.FastGFile(os.path.join(train_dir, "graph.pb"), 'rb') as f:
-        graph_def = tf.GraphDef()
-        graph_def.ParseFromString(f.read())
-        sess.graph.as_default()
-        tf.import_graph_def(graph_def, name='model')
+    logits = model.inference(x_pl)
+
+    loss = model.loss(logits, labels_pl)
+
+    eval_op = model.evaluate(logits, labels_pl)
 
     print "done..."
 
+    saver = tf.train.Saver(tf.all_variables())
+    saver.restore(sess, os.path.join('train', 'checkpoint-19999'))
 
-def get_output_op(sess):
-    return sess.graph.get_tensor_by_name('softmax_result:0')
-
-
-def get_eval_op(sess):
-    return sess.graph.get_tensor_by_name('eval')
-
-
-def get_feed_dict(x, labels):
-
-    return {
-        'inputs_pl:0': x,
-        'labels_pl:0': labels
-    }
+    return Model(logits, loss, eval_op)
 
 
 if __name__ == "__main__":
     with tf.Session() as session:
-        restore_from_train_sess(session, './train')
-        eval_op = get_eval_op(session)
+        model_graph = restore_from_train_sess(session, './train')
 
-        x, labels = data_set.fetch_data('./recordings', False)
-        feed_dict = get_feed_dict(x, labels)
+        data = data_set.fetch_data('./alternate_test', False)
+        x, labels = data.get_all()
 
-        print "Accuracy: %.2f" % session.run(eval_op, feed_dict=feed_dict)
+        precision = session.run(model_graph.evaluate,
+                    feed_dict={
+                        x_pl: x,
+                        labels_pl: labels
+                    })
+
+        print "Precision: %.2f" % precision

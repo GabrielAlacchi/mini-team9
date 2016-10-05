@@ -7,8 +7,6 @@ import os
 import re
 import transform
 
-import scipy
-
 
 NOISE_FACTOR = 0.5
 
