@@ -48,9 +48,9 @@ def restore_from_train_sess(sess, train_dir):
     greatest_checkpoint = 0
 
     for file_path in checkpoint_files:
-        match = re.match("checkpoint-([0-9]+)", file_path)
-        if match:
-            checkpoint_num = int(match.group(1))
+        items = file_path.split('-')
+        if len(items) > 1:
+            checkpoint_num = int(items[1])
             greatest_checkpoint = max(checkpoint_num, greatest_checkpoint)
 
     saver.restore(sess, os.path.join(train_dir, 'checkpoint-%d' % greatest_checkpoint))
@@ -65,6 +65,7 @@ def restore_from_train_sess(sess, train_dir):
             match = re.match("([0-9]+):(.*)", line)
             if match:
                 label_dict[int(match.group(1))] = match.group(2)
+            line = f.readline()
 
     return Model(logits, loss, eval_op, label_dict)
 
@@ -73,7 +74,7 @@ if __name__ == "__main__":
     with tf.Session() as session:
         model_graph = restore_from_train_sess(session, './train')
 
-        data = data_set.fetch_data('./alternate_test', False)
+        data = data_set.fetch_data('./recordings', label_dict=model_graph.label_dict)
         x, labels = data.get_all()
 
         precision = session.run(model_graph.evaluate,

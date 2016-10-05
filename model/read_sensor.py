@@ -9,6 +9,25 @@ import sys
 
 import data_set
 import consume_model
+import socket
+
+
+def react_to_label(label):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_addr = ('localhost', 8124)
+
+    try:
+        sock.connect(server_addr)
+        if label == 'left':
+            sock.sendall("backward\n")
+        elif label == 'right':
+            sock.sendall("forward\n")
+        elif label == 'up':
+            sock.sendall("toggle-play\n")
+    except:
+        print "Couldn't connect to the server"
+    finally:
+        sock.close()
 
 
 def open_com(port_name, baud):
@@ -55,9 +74,12 @@ def take_readings(com_port, number_of_readings, model, session):
                                    })
 
         labels = model.labels_from_prediction(y)
+
         print "Classifier prediction: %s" % labels[0]
+        # react_to_label(labels[0])
 
         lines = []
+        counter = 0
 
 
 def main(argv):

@@ -77,7 +77,7 @@ def train():
                     print "Precision %.2f" % precision
 
             # Validation
-            validation_data = data_set.fetch_data('./alternate_test', False)
+            validation_data = data_set.fetch_data('./recordings', False)
             test_gestures, test_labels = validation_data.get_all()
             feed_dict = {
                 x: test_gestures,

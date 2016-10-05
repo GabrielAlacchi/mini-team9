@@ -44,11 +44,12 @@ class DataSet:
         return inputs, labels
 
 
-def fetch_data(directory, test):
+def fetch_data(directory, test=False, label_dict=None):
     if test:
         return fetch_test_data()
     else:
-        return fetch_data_from_dir(directory)
+        return fetch_data_from_dir(directory, label_dict)
+        return fetch_data_from_dir(directory, label_dict)
 
 
 def norm(vector):
@@ -238,20 +239,27 @@ def process(data):
 def fetch_input_from_lines(lines):
     # Fetches inputs and pre processes them
     inputs = np.zeros([1, 150])
-    write_from_lines(lines, inputs)
+    write_from_lines(lines, inputs[0])
     return process(inputs)
 
 
-def fetch_data_from_dir(directory):
+def fetch_data_from_dir(directory, label_dict):
 
     print "Loading data from %s" % directory
 
     sub_dirs = [os.path.join(directory, x) for x in os.listdir(directory) if
                 os.path.isdir(os.path.join(directory, x))]
 
-    label_dict = {}
-    for j in xrange(len(sub_dirs)):
-        label_dict[j] = os.path.basename(sub_dirs[j])
+    if not label_dict:
+        label_dict = {}
+        for j in xrange(len(sub_dirs)):
+            label_dict[j] = os.path.basename(sub_dirs[j])
+    else:
+        # Order the sub directories w.r.t the dictionary values
+        new_dirs = []
+        for key, val in label_dict.iteritems():
+            new_dirs += [d for d in sub_dirs if val in d]
+        sub_dirs = new_dirs
 
     arrays = []
 
