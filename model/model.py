@@ -3,7 +3,7 @@ import math
 import tensorflow as tf
 
 NUM_CLASSES = 3
-INPUT_SIZE = 150
+INPUT_SIZE = 213
 
 
 def weight_variable(shape, name):
@@ -27,12 +27,15 @@ def max_pool_2x2(x):
 
 def convolution(x, input_size, scope_name):
 
-    x_conv = tf.reshape(x, [-1, 50, 3, 1])
+    x_conv = tf.reshape(x, [-1, input_size / 3, 3, 1])
     with tf.name_scope(scope_name):
         W = weight_variable([5, 5, 1, 16], name=scope_name + '/weights')
         b = bias_variable([16], name=scope_name + '/biases')
 
-        return tf.nn.relu(conv2d(x_conv, W) + b)
+        tf.histogram_summary(scope_name + '/weights', W)
+        tf.histogram_summary(scope_name + '/biases', b)
+
+        return tf.nn.relu(conv2d(x_conv, W) + b, "convolution")
 
 
 def hidden_layer(x, input_size, output_size, scope_name):
@@ -45,7 +48,7 @@ def hidden_layer(x, input_size, output_size, scope_name):
         biases = tf.Variable(tf.zeros([output_size]),
                 name=scope_name + '/biases')
 
-        hidden = tf.nn.sigmoid(tf.matmul(x, weights) + biases)
+        hidden = tf.nn.relu(tf.matmul(x, weights) + biases)
 
     with tf.name_scope(scope_name + '/summaries'):
         tf.histogram_summary(scope_name + '/weights', weights)
@@ -78,10 +81,10 @@ def inference(x):
     # hidden = hidden_layer(x, INPUT_SIZE, INPUT_SIZE, "hidden")
     # hidden2 = hidden_layer(hidden1, 100, 50, "hidden2")
     conv = convolution(x, INPUT_SIZE, "conv1")
-    conv_size = 50 * 3 * 16
+    conv_size = INPUT_SIZE * 16
     conv_flat = tf.reshape(conv, shape=[-1, conv_size])
-    hidden = hidden_layer(conv_flat, conv_size, conv_size, "hidden")
-    softmax = softmax_classifier(hidden, conv_size, NUM_CLASSES, "softmax_linear")
+    hidden = hidden_layer(conv_flat, conv_size, INPUT_SIZE, "hidden")
+    softmax = softmax_classifier(hidden, INPUT_SIZE, NUM_CLASSES, "softmax_linear")
 
     return softmax
 

@@ -7,11 +7,15 @@ import os
 import re
 import transform
 
+import scipy
+
+
 NOISE_FACTOR = 0.5
 
 # http://stanford.edu/~sxie/Michael%20Xie,%20David%20Pan,%20Accelerometer%20Gesture%20Recognition.pdf
 EXP_ALPHA = 0.3
 THRESHOLD_ALPHA = 0.22
+
 
 class DataSet:
 
@@ -181,9 +185,17 @@ def threshold_and_interpolate(matrix):
 
         # Interpolate
         interpolated_vec = np.sum(matrix[inter:inter+2], axis=0) / 2.
-        matrix = np.insert(matrix, 1, values=interpolated_vec, axis=0)
+        matrix = np.insert(matrix, inter + 1, values=interpolated_vec, axis=0)
 
     return matrix
+
+
+def apply_fft(matrix):
+    fft = np.fft.fft2(matrix, s=[25, 3])
+    abs_func = np.vectorize(np.absolute)
+
+    fft = abs_func(fft)
+    return np.insert(fft, 0, matrix, axis=0)
 
 
 def map_to_mat(matrix, row_entry):
@@ -192,13 +204,19 @@ def map_to_mat(matrix, row_entry):
 
 
 def mat_to_row(matrix, row_entry):
-    for ind in xrange(matrix.shape[0]):
-        row_entry[3*ind:3*ind+3] = np.copy(matrix[ind])
+    for ind in xrange(0, row_entry.size, 3):
+        row_entry[ind:ind+3] = np.copy(matrix[ind/3])
+
+    # Return excess
+    if matrix.size > row_entry.size:
+        return matrix[row_entry.size / 3:]
 
 
 def process(data):
 
     # Stores sample points as row vectors
+
+    fft_entries = np.zeros([data.shape[0], 63])
 
     for ind in xrange(data.shape[0]):
         # Reshape every given row to a matrix of row vectors
@@ -208,7 +226,13 @@ def process(data):
         map_to_mat(matrix, data[ind])
         matrix = exp_moving_avg(example_matrix=matrix)
         matrix = threshold_and_interpolate(matrix)
-        mat_to_row(matrix, data[ind])
+        matrix = apply_fft(matrix)
+        excess = mat_to_row(matrix, data[ind])
+        mat_to_row(excess, fft_entries[ind])
+
+    fft_entries = fft_entries.T
+    for ind in xrange(fft_entries.shape[0]):
+        data = np.insert(data, data.shape[1], fft_entries[ind], axis=1)
 
     return data
 
@@ -253,11 +277,3 @@ def fetch_data_from_dir(directory):
 
     print "Data loaded!\n"
     return data_set
-
-if __name__ == "__main__":
-    array = fetch_all_files('./recordings/up')
-
-    for i in xrange(array.shape[0]):
-        with open('./test/up/readings_%d.dat' % i, 'w') as f:
-            for j in xrange(0, 150, 3):
-                f.write('!ANG:%.2f,%.2f,%.2f\n' % (array[i][j], array[i][j+1], array[i][j+2]))

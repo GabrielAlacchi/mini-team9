@@ -7,9 +7,9 @@ import data_set
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
-flags.DEFINE_float('learning_rate', 1e-4, 'Initial learning rate.')
-flags.DEFINE_integer('training_steps', 15000, 'Number of training steps.')
-flags.DEFINE_integer('batch_size', 50, 'Batch size.')
+flags.DEFINE_float('learning_rate', 0.001, 'Initial learning rate.')
+flags.DEFINE_integer('training_steps', 20000, 'Number of training steps.')
+flags.DEFINE_integer('batch_size', 45, 'Batch size.')
 flags.DEFINE_string('train_dir', 'train', 'Directory to put training data.')
 flags.DEFINE_bool('test_data', False, 'Whether or not to use test_data')
 
@@ -77,7 +77,7 @@ def train():
                     print "Precision %.2f" % precision
 
             # Validation
-            validation_data = data_set.fetch_data('./test_data', False)
+            validation_data = data_set.fetch_data('./alternate_test', False)
             test_gestures, test_labels = validation_data.get_all()
             feed_dict = {
                 x: test_gestures,
