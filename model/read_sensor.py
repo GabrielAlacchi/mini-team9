@@ -11,6 +11,9 @@ import data_set
 import consume_model
 import socket
 
+import math
+import numpy as np
+
 
 def react_to_label(label):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -73,10 +76,15 @@ def take_readings(com_port, number_of_readings, model, session):
                                        consume_model.x_pl: inputs
                                    })
 
+        probs = np.array(map(math.exp, y[0]))
+        probs /= np.sum(probs)
+
+        print probs
+
         labels = model.labels_from_prediction(y)
 
         print "Classifier prediction: %s" % labels[0]
-        # react_to_label(labels[0])
+        react_to_label(labels[0])
 
         lines = []
         counter = 0
