@@ -11,8 +11,8 @@ import transform
 NOISE_FACTOR = 0.5
 
 # http://stanford.edu/~sxie/Michael%20Xie,%20David%20Pan,%20Accelerometer%20Gesture%20Recognition.pdf
-EXP_ALPHA = 0.3
-THRESHOLD_ALPHA = 0.22
+EXP_ALPHA = 0.4
+THRESHOLD_ALPHA = 0.30
 
 
 class DataSet:
