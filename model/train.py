@@ -8,17 +8,18 @@ import data_set
 flags = tf.app.flags
 FLAGS = flags.FLAGS
 flags.DEFINE_float('learning_rate', 0.001, 'Initial learning rate.')
-flags.DEFINE_integer('training_steps', 20000, 'Number of training steps.')
-flags.DEFINE_integer('batch_size', 45, 'Batch size.')
-flags.DEFINE_string('train_dir', 'train', 'Directory to put training data.')
+flags.DEFINE_integer('training_steps', 10000, 'Number of training steps.')
+flags.DEFINE_integer('batch_size', 25, 'Batch size.')
+flags.DEFINE_string('train_dir', 'svm-train', 'Directory to put training data.')
 flags.DEFINE_bool('test_data', False, 'Whether or not to use test_data')
+flags.DEFINE_string('train_data_dir', 'train-data', 'Data where training data is located')
 
 
 def train():
 
     with tf.Graph().as_default():
 
-        data = data_set.fetch_data('./recordings', FLAGS.test_data)
+        data = data_set.fetch_data(FLAGS.train_data_dir, FLAGS.test_data)
 
         x = tf.placeholder(tf.float32, [None, model.INPUT_SIZE], name='inputs_pl')
         labels = tf.placeholder(tf.int32, [None, model.NUM_CLASSES], name='labels_pl')

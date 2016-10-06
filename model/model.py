@@ -78,13 +78,13 @@ def softmax_classifier(x, input_size, num_classes, scope_name):
 # Requires that inputs are row vectors of size INPUT_SIZE
 def inference(x):
 
-    # hidden = hidden_layer(x, INPUT_SIZE, INPUT_SIZE, "hidden")
-    # hidden2 = hidden_layer(hidden1, 100, 50, "hidden2")
-    conv = convolution(x, INPUT_SIZE, "conv1")
-    conv_size = INPUT_SIZE * 16
-    conv_flat = tf.reshape(conv, shape=[-1, conv_size])
-    hidden = hidden_layer(conv_flat, conv_size, INPUT_SIZE, "hidden")
-    softmax = softmax_classifier(hidden, INPUT_SIZE, NUM_CLASSES, "softmax_linear")
+    hidden = hidden_layer(x, INPUT_SIZE, INPUT_SIZE, "hidden")
+    hidden2 = hidden_layer(hidden, INPUT_SIZE, 50, "hidden2")
+    # conv = convolution(x, INPUT_SIZE, "conv1")
+    # conv_size = INPUT_SIZE * 16
+    # conv_flat = tf.reshape(conv, shape=[-1, conv_size])
+    # hidden = hidden_layer(conv_flat, conv_size, INPUT_SIZE, "hidden")
+    softmax = softmax_classifier(hidden2, 50, NUM_CLASSES, "softmax_linear")
 
     return softmax
 

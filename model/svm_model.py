@@ -22,7 +22,7 @@ def inference(x):
 
     with tf.name_scope('linear_svm'):
         W = weight_variable([INPUT_SIZE, NUM_CLASSES], name='linear_svm/weights')
-        b = bias_variable([16], name='linear_svm/biases')
+        b = bias_variable([NUM_CLASSES], name='linear_svm/biases')
 
         tf.histogram_summary('linear_svm/weights', W)
         tf.histogram_summary('linear_svm/biases', b)
@@ -31,13 +31,21 @@ def inference(x):
 
 
 def loss(y, labels):
-    weights = tf.get_variable('linear_svm/weights')
+    labels = tf.cast(labels, dtype=tf.float32)
 
-    regularization = 0.5 * tf.reduce_sum(tf.square(W), 'loss/l2')
+    weights = [v for v in tf.all_variables() if 'linear_svm/weights' in v.name]
 
-    hinge_loss = tf.reduce_sum(tf.maximum(tf.zeros([None, 1]), 1 - y*labels))
+    regularization = 0.5 * tf.reduce_sum(tf.square(weights[0]), name='l2_loss')
 
-    return tf.add(regularization, SVM_SCALAR*hinge_loss)
+    hinge_loss = tf.reduce_mean(tf.reduce_sum(tf.nn.relu(1. - y*labels), reduction_indices=[1]), name="hinge_loss")
+
+    svm_loss = tf.add(regularization, SVM_SCALAR*hinge_loss, name='svm_loss')
+
+    tf.scalar_summary('L2 Loss', regularization)
+    tf.scalar_summary('Hinge Loss', hinge_loss)
+    tf.scalar_summary('SVM Loss', svm_loss)
+
+    return svm_loss
 
 
 def training(loss_function, learning_rate):
@@ -50,3 +58,8 @@ def training(loss_function, learning_rate):
 
     train_op = optimizer.minimize(loss_function, global_step=global_step)
     return train_op
+
+
+def evaluate(y, labels):
+    correct = tf.equal(tf.argmax(y, 1), tf.argmax(labels, 1))
+    return tf.reduce_mean(tf.cast(correct, tf.float32), name='eval')

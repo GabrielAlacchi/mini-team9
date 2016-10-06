@@ -8,3 +8,6 @@ data
 alternate_test/
 recordings/
 test_data/
+
+train-data/
+svm-train/
